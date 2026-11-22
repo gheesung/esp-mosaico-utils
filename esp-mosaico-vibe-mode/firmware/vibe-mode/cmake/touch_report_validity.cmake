@@ -7,6 +7,13 @@ function(vibe_configure_touch_report_validity)
     set(original "${touch_dir}/esp_lcd_touch_cst9220.c")
     set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${original}")
     file(READ "${original}" contents)
+    # esp_lcd_touch_cst9220 0.1.2 already returns ESP_ERR_NOT_FINISHED for
+    # unusable reports without clearing touch state, so the guarded generated
+    # copy is only needed for older driver sources.
+    string(FIND "${contents}" "return ESP_ERR_NOT_FINISHED;" fixed)
+    if(NOT fixed LESS 0)
+        return()
+    endif()
     set(before [=[    if (report[0] == CST9220_REPORT_ACK || report[CST9220_REPORT_HEADER_SIZE - 1] != CST9220_REPORT_ACK) {
         ESP_LOGW(TAG, "Malformed report header: first=0x%02x marker=0x%02x",
                  report[0], report[CST9220_REPORT_HEADER_SIZE - 1]);
